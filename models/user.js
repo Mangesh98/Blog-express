@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
-dotenv.config({ path: "../.env" });
+dotenv.config({ path: ".env" });
 
 mongoose
 	.connect(process.env.DB_URL)
@@ -17,6 +17,10 @@ const userSchema = mongoose.Schema({
 	age: Number,
 	email: String,
 	password: String,
+    posts:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "post"
+}
 });
 
 module.exports = mongoose.model("user", userSchema);
