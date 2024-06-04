@@ -62,4 +62,19 @@ app.post("/login", async (req, res) => {
 	});
 });
 
+app.get("/dashboard", auth, async (req, res) => {
+	console.log(req.user);
+	res.redirect("/");
+});
+
+function auth(req, res, next) {
+	const token = req.cookies.token;
+	if (!token || token === "") return res.redirect("/login");
+	jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+		if (err) return res.redirect("/login");
+		req.user = user;
+	});
+	next();
+}
+
 app.listen(3000);
