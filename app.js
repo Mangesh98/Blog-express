@@ -24,14 +24,14 @@ app.get("/login", (req, res) => {
 	res.render("login");
 });
 app.post("/register", async (req, res) => {
-	let { name, username, email, password, age } = req.body;
+	let { name, userName, email, password, age } = req.body;
 	let user = await userModel.findOne({ email });
 	if (user) return res.status(500).send("User Already Registered");
 	bcrypt.genSalt(10, (err, salt) => {
 		bcrypt.hash(password, salt, async (err, hash) => {
 			let user = await userModel.create({
 				name,
-				username,
+				userName,
 				email,
 				password: hash,
 				age,
@@ -42,7 +42,7 @@ app.post("/register", async (req, res) => {
 				process.env.JWT_SECRET
 			);
 			res.cookie("token", token, { httpOnly: true });
-			res.send("Registered Successfully");
+			res.redirect("/profile");
 		});
 	});
 });
@@ -58,13 +58,29 @@ app.post("/login", async (req, res) => {
 			process.env.JWT_SECRET
 		);
 		res.cookie("token", token, { httpOnly: true });
-		res.send("Login Successfully");
+		res.redirect("/profile");
 	});
 });
 
-app.get("/dashboard", auth, async (req, res) => {
-	console.log(req.user);
-	res.redirect("/");
+app.post("/post", auth, async (req, res) => {
+	let content = req.body.content.trim();
+	let user = await userModel.findById(req.user.userId, "-password");
+	if (!user) return res.status(500).send("Something went wrong !");
+	if (content === "") return res.redirect("/profile");
+
+	let post = await postModel.create({
+		user: user._id,
+		content,
+	});
+	user.posts.push(post._id);
+	await user.save();
+	res.redirect("/profile");
+});
+
+app.get("/profile", auth, async (req, res) => {
+	let user = await userModel.findById(req.user.userId, "-password").populate("posts");
+	console.log(user);
+	res.render("profile", { user });
 });
 
 function auth(req, res, next) {
