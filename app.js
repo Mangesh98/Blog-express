@@ -6,11 +6,14 @@ const postModel = require("./models/post");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
+const path = require("path");
+const upload = require("./config/multerConfig");
 dotenv.config({ path: ".env" });
 
 app.set("view engine", "ejs");
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, "public")));
 app.use(cookieParser());
 
 app.get("/", (req, res) => {
@@ -23,6 +26,7 @@ app.get("/logout", (req, res) => {
 app.get("/login", (req, res) => {
 	res.render("login");
 });
+
 app.post("/register", async (req, res) => {
 	let { name, userName, email, password, age } = req.body;
 	let user = await userModel.findOne({ email });
@@ -82,6 +86,15 @@ app.get("/profile", auth, async (req, res) => {
 		.findById(req.user.userId, "-password")
 		.populate("posts");
 	res.render("profile", { user });
+});
+app.get("/profile/upload", auth, async (req, res) => {
+	res.render("profileUpload");
+});
+app.post("/upload", auth, upload.single("image"), async (req, res) => {
+	let user = await userModel.findOne({ _id: req.user.userId });
+	user.profilePic = req.file.filename;
+	await user.save();
+	res.redirect("/profile");
 });
 app.get("/like/:id", auth, async (req, res) => {
 	let post = await postModel.findOne({ _id: req.params.id }).populate("user");
