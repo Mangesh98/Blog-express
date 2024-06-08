@@ -78,9 +78,37 @@ app.post("/post", auth, async (req, res) => {
 });
 
 app.get("/profile", auth, async (req, res) => {
-	let user = await userModel.findById(req.user.userId, "-password").populate("posts");
-	console.log(user);
+	let user = await userModel
+		.findById(req.user.userId, "-password")
+		.populate("posts");
 	res.render("profile", { user });
+});
+app.get("/like/:id", auth, async (req, res) => {
+	let post = await postModel.findOne({ _id: req.params.id }).populate("user");
+
+	const isAlreadyLiked = post.likes.includes(req.user.userId);
+
+	if (isAlreadyLiked) {
+		post.likes.splice(post.likes.indexOf(req.user.userId), 1);
+	} else {
+		post.likes.push(req.user.userId);
+	}
+
+	await post.save();
+
+	res.redirect("/profile");
+});
+app.get("/edit/:id", auth, async (req, res) => {
+	let post = await postModel.findOne({ _id: req.params.id }).populate("user");
+
+	res.render("edit", { post });
+});
+app.post("/update/:id", auth, async (req, res) => {
+	let post = await postModel.findOneAndUpdate(
+		{ _id: req.params.id },
+		{ content: req.body.content }
+	);
+	res.redirect("/profile");
 });
 
 function auth(req, res, next) {
